@@ -62,3 +62,40 @@ def tournaments(request, *args, **kwargs):
 			for o in result
 	])
 
+
+@rest
+def rankings(request, *args, **kwargs):
+	tournament_id = args[0]
+	tournament = Tournament.objects.get(pk = tournament_id)
+	return [
+			{
+				'player': str(player),
+				'score': score,
+			}
+			for player, score
+			in tournament.final_rankings()
+	]
+
+
+@rest
+def matches(request, *args, **kwargs):
+	tournament_id = args[0]
+	tournament = Tournament.objects.get(pk = tournament_id)
+	return [
+			{
+				'match': str(match),
+				'white': str(match.white_player),
+				'black': str(match.black_player),
+				'round': match.round,
+				'result' : (
+					'1/2' if match.result == DRAW
+					else (
+						'1-0' if match.result == WHITE_WIN
+						else '0-1'
+					)
+				)
+			}
+			for match
+			in tournament.match_set.all().order_by('-round')
+	]
+

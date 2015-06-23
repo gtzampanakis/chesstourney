@@ -1,11 +1,15 @@
 import logging, collections, datetime, random
 from django.db import models
+from django.core.exceptions import ValidationError
 
 LOGGER = logging.getLogger(__name__)
 
 DRAW = 0
 WHITE_WIN = 1
 BLACK_WIN = 2
+
+MINIMUM_NPLAYERS = 4
+MINIMUM_ROUNDS = 1
 
 BYE_PLAYER_ID = 1
 
@@ -22,6 +26,8 @@ class Player(models.Model):
 	def __unicode__(self):
 		return '%s (%s)' % (self.name, self.id)
 
+class CannotProceedException(Exception):
+	pass
 
 
 class Tournament(models.Model):
@@ -32,6 +38,10 @@ class Tournament(models.Model):
 	created_date = models.DateTimeField(auto_now_add = True)
 	updated_date = models.DateTimeField(auto_now = True)
 
+	def clean(self):
+		if self.rounds < MINIMUM_ROUNDS:
+			raise ValidationError('The minimum number of rounds is %s' % MINIMUM_ROUNDS)
+
 	def __unicode__(self):
 		return '%s (%s)' % (self.name, self.id)
 
@@ -39,20 +49,34 @@ class Tournament(models.Model):
 		matches = self.match_set.filter(result__isnull = False)
 
 	def can_proceed(self):
+		try:
+			self.check_can_proceed()
+			return True
+		except CannotProceedException as e:
+			LOGGER.exception(e)
+			return False
+
+	def check_can_proceed(self):
 		current_round = self.current_round()
+
+		if current_round == 0:
+			if self.players.count() < MINIMUM_NPLAYERS:
+				raise CannotProceedException('A tournament must have a minimum of %s players.'
+																			% MINIMUM_NPLAYERS)
+
 
 # If there exist unfinished matches we cannot proceed.
 		if (self.match_set
 					.filter(round__lte = current_round)
 					.filter( result__isnull = True)).exists():
-			return False
+			raise CannotProceedException('Unfinished matches exist. Cannot proceed.')
 
 # If the fixtures for next round have been generated we cannot proceed.
 		if self.match_set.filter(round__gt = current_round).exists():
-			return False
+			raise CannotProceedException('Fixtures for next round have already been generated.')
 
 		if current_round >= self.rounds:
-			return False
+			raise CannotProceedException('Tournament completed.')
 
 		return True
 
@@ -87,10 +111,7 @@ class Tournament(models.Model):
 
 	def create_fixtures(self):
 
-		if not self.can_proceed():
-			raise Exception('There are either unfinished matches in the previous round '
-							'or the fixtures for the next round have already been '
-							'generated.')
+		self.check_can_proceed()
 		
 		player_to_score = self.scores()
 		LOGGER.info('PLAYER_TO_SCORE: %s', player_to_score)
@@ -273,16 +294,56 @@ class Tournament(models.Model):
 				match.save()
 
 
-
-		
-
 	def current_round(self):
 		matches_count = self.match_set.count()
 		current_round = self.match_set.all().aggregate(models.Max('round')).get(
 																	'round__max') or 0
-
 		return current_round
-		
+
+	def final_rankings(self):
+		scores = self.scores()
+# The inner sorted here is to first sort on name. To understand the utility of
+# this, remember that the sorted() function is stable.
+		ranked = sorted(sorted(scores), key = lambda p: scores[p], reverse = True)
+		return [[player, scores[player]] for player in ranked]
+
+
+	def update_ratings(self):
+		nrated = 0
+		is_finished = self.is_finished()
+		if not is_finished:
+			raise CannotProceedException('Tournament should be finished in order '
+																		'for ratings to '
+																		'be updated.')
+		from .elo import match_increment
+		for match in self.match_set.all().order_by('date'):
+			
+			if match.ratinghist_set.all().count() == 0:
+				white_rating = match.white_player.rating()
+				black_rating = match.black_player.rating()
+				if match.result == WHITE_WIN:
+					p_observed = 1.
+				elif match.result == BLACK_WIN:
+					p_observed = 0.
+				elif match.result == DRAW:
+					p_observed = 0.5
+
+				inc = match_increment(white_rating, black_rating, p_observed)
+
+				ratinghists_to_save = [ ]
+				for pl, sign, r in [[match.white_player, 1, white_rating], [match.black_player, -1, black_rating]]:
+					new_ratinghist = RatingHist(	player = pl,
+													rating = r + sign * inc,
+													date = match.date,
+													after_match = match			)
+					ratinghists_to_save.append(new_ratinghist)
+
+				for rh in ratinghists_to_save:
+					rh.save()
+				nrated += 1
+
+		return nrated
+
 
 
 
@@ -305,6 +366,11 @@ class Match(models.Model):
 	created_date = models.DateTimeField(auto_now_add = True)
 	updated_date = models.DateTimeField(auto_now = True)
 
+	def played(self):
+		if self.result is None: return 0
+		else: return 1
+
+
 	class Meta:
 		verbose_name_plural = 'matches'
 
@@ -323,8 +389,9 @@ class Ranks(models.Model):
 
 class RatingHist(models.Model):
 	player = models.ForeignKey(Player)
-	rating = models.SmallIntegerField()
+	rating = models.FloatField()
 	date = models.DateField()
+	after_match = models.ForeignKey(Match, null = True)
 	created_date = models.DateTimeField(auto_now_add = True)
 	updated_date = models.DateTimeField(auto_now = True)
 
