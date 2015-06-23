@@ -32,7 +32,7 @@ def rest(f):
 def index(request):
 	context = RequestContext(request, {
 	})
-	return render(request, 'swiss/index2.html', context)
+	return render(request, 'swiss/index.html', context)
 
 @rest
 def players(request, *args, **kwargs):
