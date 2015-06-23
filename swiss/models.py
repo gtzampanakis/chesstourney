@@ -83,8 +83,9 @@ class Tournament(models.Model):
 	def is_finished(self):
 		current_round = self.current_round()
 
-		if current_round >= self.rounds:
-			return True
+		if current_round == self.rounds:
+			if not self.match_set.filter(round = current_round).filter(result__isnull = True).exists():
+				return True
 
 		return False
 
@@ -295,7 +296,6 @@ class Tournament(models.Model):
 
 
 	def current_round(self):
-		matches_count = self.match_set.count()
 		current_round = self.match_set.all().aggregate(models.Max('round')).get(
 																	'round__max') or 0
 		return current_round
@@ -330,11 +330,12 @@ class Tournament(models.Model):
 
 				ratinghists_to_save = [ ]
 				for pl, sign, r in [[match.white_player, 1, white_rating], [match.black_player, -1, black_rating]]:
-					new_ratinghist = RatingHist(	player = pl,
-													rating = r + sign * inc,
-													date = match.date,
-													after_match = match			)
-					ratinghists_to_save.append(new_ratinghist)
+					if pl.pk != BYE_PLAYER_ID:
+						new_ratinghist = RatingHist(	player = pl,
+														rating = r + sign * inc,
+														date = match.date,
+														after_match = match			)
+						ratinghists_to_save.append(new_ratinghist)
 
 				for rh in ratinghists_to_save:
 					rh.save()
@@ -346,7 +347,7 @@ class Tournament(models.Model):
 
 
 MATCH_RESULT_CHOICES = [
-		[DRAW, '1/2'],
+		[DRAW, '0.5-0.5'],
 		[WHITE_WIN, '1-0'],
 		[BLACK_WIN, '0-1'],
 ]

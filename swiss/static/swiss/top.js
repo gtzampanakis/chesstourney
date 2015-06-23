@@ -178,6 +178,12 @@ var match_columns = [
 		}
 	},
 	{
+		name: "date",
+		label: "Date",
+		editable: false,
+		cell: "string"
+	},
+	{
 		name: "result",
 		label: "Result",
 		editable: false,

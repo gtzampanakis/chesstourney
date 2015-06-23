@@ -54,7 +54,7 @@ def tournaments(request, *args, **kwargs):
 	return sorted([
 			{
 				'id': o.id,
-				'name' : o.name,
+				'name': o.name,
 				'place' : o.place,
 				'is_finished': 'Yes' if o.is_finished() else 'No',
 				'rounds': o.rounds,
@@ -99,12 +99,16 @@ def matches(request, *args, **kwargs):
 			{
 				'white': str(match.white_player),
 				'black': str(match.black_player),
+				'date': match.date.isoformat() if match.date else '',
 				'round': match.round,
 				'result' : (
-					'1/2' if match.result == DRAW
+					'0.5-0.5' if match.result == DRAW
 					else (
 						'1-0' if match.result == WHITE_WIN
-						else '0-1'
+						else (
+							'0-1' if match.result == BLACK_WIN
+								else 'Not played'
+						)
 					)
 				)
 			}
