@@ -211,3 +211,8 @@ span.forgot_pass_suggestion {
 div.padded {
 	padding: 5px;
 }
+
+div.info {
+	padding-top: 8px !important;
+	padding-bottom: 8px !important;
+}

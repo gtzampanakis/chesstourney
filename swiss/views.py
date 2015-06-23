@@ -113,6 +113,6 @@ def matches(request, *args, **kwargs):
 				)
 			}
 			for match
-			in tournament.match_set.all().order_by('-round')
+			in tournament.match_set.all().order_by('round')
 	]
 
