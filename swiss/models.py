@@ -24,7 +24,7 @@ class Player(models.Model):
 		return self.ratinghist_set.order_by('-date').first().rating
 
 	def __unicode__(self):
-		return '%s (%s)' % (self.name, self.id)
+		return '%s' % (self.name)
 
 class CannotProceedException(Exception):
 	pass
@@ -43,7 +43,7 @@ class Tournament(models.Model):
 			raise ValidationError('The minimum number of rounds is %s' % MINIMUM_ROUNDS)
 
 	def __unicode__(self):
-		return '%s (%s)' % (self.name, self.id)
+		return '%s' % (self.name)
 
 	def rankings(self):
 		matches = self.match_set.filter(result__isnull = False)
@@ -302,9 +302,7 @@ class Tournament(models.Model):
 
 	def final_rankings(self):
 		scores = self.scores()
-# The inner sorted here is to first sort on name. To understand the utility of
-# this, remember that the sorted() function is stable.
-		ranked = sorted(sorted(scores), key = lambda p: scores[p], reverse = True)
+		ranked = sorted(scores, key = lambda p: (-scores[p], p.name), reverse = False)
 		return [[player, scores[player]] for player in ranked]
 
 
@@ -375,7 +373,7 @@ class Match(models.Model):
 		verbose_name_plural = 'matches'
 
 	def __unicode__(self):
-		return '%s - %s (%s)' % (self.white_player, self.black_player, self.id)
+		return '%s - %s' % (self.white_player, self.black_player)
 
 class Ranks(models.Model):
 	tournament = models.ForeignKey(Tournament)

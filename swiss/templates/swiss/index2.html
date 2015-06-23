@@ -7,7 +7,6 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
 	<title>Swiss Tournaments Manager</title>
 
@@ -32,12 +31,14 @@
 	<link rel="stylesheet" href="{% static 'swiss/backgrid-paginator.css' %}">
 	<link rel="stylesheet" href="{% static 'swiss/backgrid-filter.css' %}">
 
+	<link rel="stylesheet" href="{% static 'swiss/navbar.css' %}">
 	<link rel="stylesheet" href="{% static 'swiss/layout.css' %}">
 
 	<script type="text/javascript">
 	</script>
 
   </head>
+	  {% comment %}
   <body>
 
 		<h1>Swiss Tournaments Manager</h1>
@@ -56,6 +57,40 @@
 
 		<hr>
 		<span class="footer">2015 Giorgos Tzampanakis</span>
+
+  </body>
+	  {% endcomment %}
+  <body>
+
+    <div class="container">
+
+      <!-- Static navbar -->
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Swiss Tournament Manager</a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul id="routes" class="nav navbar-nav">
+              <li id="listtournaments"><a href="#listtournaments">Tournaments</a></li>
+              <li id="listplayers" ><a href="#listplayers">Players</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav>
+
+      <!-- Main component for a primary marketing message or call to action -->
+      <div class="jumbotron" id="center_list">
+      </div>
+
+    </div> <!-- /container -->
+
 
   </body>
 </html>

@@ -8,14 +8,14 @@ var Tournament = Backbone.Model.extend({
 
 });
 
-function parse_serialized(ser) {
-	var result = [ ];
-	for (var i = 0; i < ser.length; i++) {
-		result[i] = ser[i].fields;
-		result[i].pk = ser[i].pk;
-	}
-	return result;
-}
+var Match = Backbone.Model.extend({
+
+});
+
+var Ranking = Backbone.Model.extend({
+
+});
+
 
 var PAGE_SIZE = 25;
 
@@ -37,10 +37,36 @@ var Tournaments = Backbone.PageableCollection.extend({
 	mode: 'client'
 });
 
+var touridPassed = null;
+var nameOfTouridPassed = null;
+
+var Matches = Backbone.PageableCollection.extend({
+	model: Match,
+	url: function() {
+		var u = SWISS_PREFIX + 'tournaments/matches/' + touridPassed;
+		return u;
+	},
+	state: {
+		pageSize: PAGE_SIZE
+	},
+	mode: 'client'
+});
+
+var Rankings = Backbone.PageableCollection.extend({
+	model: Match,
+	url: function() {
+		var u = SWISS_PREFIX + 'tournaments/rankings/' + touridPassed;
+		return u;
+	},
+	state: {
+		pageSize: PAGE_SIZE
+	},
+	mode: 'client'
+});
+
 var player_columns = [
 	{
 		name: "id",
-		className: 'foobar',
 		label: "Player ID",
 		editable: false,
 		cell: Backgrid.IntegerCell.extend({
@@ -83,6 +109,18 @@ var tournament_columns = [
 		cell: "string"
 	},
 	{
+		name: "rounds",
+		label: "Total Rounds",
+		editable: false,
+		cell: "string"
+	},
+	{
+		name: "rounds_done",
+		label: "Rounds Done",
+		editable: false,
+		cell: "string"
+	},
+	{
 		name: "is_finished",
 		label: "Finished?",
 		editable: false,
@@ -93,6 +131,82 @@ var tournament_columns = [
 		label: "Place",
 		editable: false,
 		cell: "string"
+	},
+	{
+		name: "matches_url",
+		label: "",
+		editable: false,
+		cell: "uri",
+		formatter: {
+			fromRaw: function(rawData, model) { return 'Matches'; },
+			toRaw: function(formattedData, model) { }
+		}
+	},
+	{
+		name: "rankings_url",
+		label: "",
+		editable: false,
+		cell: "uri",
+		formatter: {
+			fromRaw: function(rawData, model) { return rawData ? 'Rankings' : ''; },
+			toRaw: function(formattedData, model) { }
+		}
+	}
+];
+
+var match_columns = [
+	{
+		name: "white",
+		label: "White",
+		editable: false,
+		cell: "string"
+	},
+	{
+		name: "black",
+		label: "Black",
+		editable: false,
+		cell: "string"
+	},
+	{
+		name: "round",
+		label: "Round",
+		editable: false,
+		cell: "number",
+		formatter: {
+			fromRaw: function(rawData, model) { return parseInt(rawData); },
+			toRaw: function(formattedData, model) { }
+		}
+	},
+	{
+		name: "result",
+		label: "Result",
+		editable: false,
+		cell: "string"
+	},
+];
+
+var ranking_columns = [
+	{
+		name: "rank",
+		label: "Rank",
+		editable: false,
+		cell: "string"
+	},
+	{
+		name: "player",
+		label: "Player",
+		editable: false,
+		cell: "string"
+	},
+	{
+		name: "score",
+		label: "Score",
+		editable: false,
+		cell: "number",
+		formatter: {
+			fromRaw: function(rawData, model) { return parseFloat(rawData).toFixed(1); },
+			toRaw: function(formattedData, model) { }
+		}
 	}
 ];
 
@@ -100,6 +214,8 @@ var tournament_columns = [
 
 players_inst = new Players;
 tournaments_inst = new Tournaments;
+matches_inst = new Matches;
+rankings_inst = new Rankings;
 
 var players_grid = new Backgrid.Grid({
 	columns: player_columns,
@@ -130,23 +246,158 @@ var tournaments_filter = new Backgrid.Extension.ClientSideFilter({
 	fields: ['name']
 });
 
+var matches_grid = new Backgrid.Grid({
+	columns: match_columns,
+	collection: matches_inst
+});
+
+var matches_paginator = new Backgrid.Extension.Paginator({
+	collection: matches_inst
+});
+
+var matches_filter = new Backgrid.Extension.ClientSideFilter({
+	collection: matches_inst,
+	fields: ['name']
+});
+
+var rankings_grid = new Backgrid.Grid({
+	columns: ranking_columns,
+	collection: rankings_inst
+});
+
+var rankings_paginator = new Backgrid.Extension.Paginator({
+	collection: rankings_inst
+});
+
+var rankings_filter = new Backgrid.Extension.ClientSideFilter({
+	collection: rankings_inst,
+	fields: ['name']
+});
+
+function removeTarget() {
+	$('#center_list a').removeAttr('target');
+}
+
+function removeAdded() {
+	$('li.added').remove();
+}
+
+var Router = Backbone.Router.extend({
+
+	routes: {
+		'listtournaments': 'listtournaments',
+		'listplayers': 'listplayers',
+		'listmatches/:tourid': 'listmatches',
+		'listrankings/:tourid': 'listrankings'
+	},
+
+	listtournaments: function() {
+		removeAdded();
+		$('#routes li')
+			.removeClass('active')
+		;
+
+		$('#listtournaments').addClass('active');
+
+		$('#center_list')
+			.empty()
+			.append($('<h2>Tournaments</h2>'))
+			.append(tournaments_filter.render().el)
+			.append(tournaments_grid.render().el)
+			.append(tournaments_paginator.render().el)
+		;
+
+		tournaments_inst.fetch({ 
+				reset: true, 
+				success: removeTarget
+		});
+	},
+
+	listplayers: function() {
+		removeAdded();
+		$('#routes li')
+			.removeClass('active')
+		;
+
+		$('#listplayers').addClass('active');
+
+		$('#center_list')
+			.empty()
+			.append($('<h2>Players</h2>'))
+			.append(players_filter.render().el)
+			.append(players_grid.render().el)
+			.append(players_paginator.render().el)
+		;
+
+		players_inst.fetch({ 
+			reset: true,
+			success: removeTarget
+		});
+	},
+
+	listmatches: function(tourid) {
+
+		removeAdded();
+		touridPassed = tourid;
+
+		$('#routes li')
+			.removeClass('active')
+		;
+
+		$('#routes')
+			.append('<li class="active added"><a href="">Matches</a></li>')
+		;
+
+		$('#center_list')
+			.empty()
+			.append($('<h2>Matches</h2><p>'))
+			.append(matches_filter.render().el)
+			.append(matches_grid.render().el)
+			.append(matches_paginator.render().el)
+		;
+
+		matches_inst.fetch({ 
+			reset: true,
+			success: removeTarget
+		});
+	},
+
+	listrankings: function(tourid) {
+
+		removeAdded();
+		touridPassed = tourid;
+
+		$('#routes li')
+			.removeClass('active')
+		;
+
+		$('#routes')
+			.append('<li class="active added"><a href="">Rankings</a></li>')
+		;
+
+		$('#center_list')
+			.empty()
+			.append($('<h2>Rankings</h2><p>'))
+			.append(rankings_grid.render().el)
+			.append(rankings_paginator.render().el)
+		;
+
+		rankings_inst.fetch({ 
+			reset: true,
+			success: removeTarget
+		});
+	}
+
+});
+
 
 $(document).ready(function() {
 
-	$('#players_list')
-		.append(players_filter.render().el)
-		.append(players_grid.render().el)
-		.append(players_paginator.render().el)
-	;
+	router = new Router();
 
-	$('#tournaments_list')
-		.append(tournaments_filter.render().el)
-		.append(tournaments_grid.render().el)
-		.append(tournaments_paginator.render().el)
-	;
+	Backbone.history.start();
 
-
-	players_inst.fetch({ reset: true });
-	tournaments_inst.fetch({ reset: true });
+	// Default.
+	router.navigate('listtournaments', {trigger: true});
 
 })

@@ -204,7 +204,8 @@ span.forgot_pass_suggestion {
   border: 0;
 }
 
-.backgrid-container td {
+.backgrid td {
+	text-align: center !important;
 }
 
 div.padded {

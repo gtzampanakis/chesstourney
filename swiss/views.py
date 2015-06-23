@@ -57,7 +57,10 @@ def tournaments(request, *args, **kwargs):
 				'name' : o.name,
 				'place' : o.place,
 				'is_finished': 'Yes' if o.is_finished() else 'No',
+				'rounds': o.rounds,
 				'rounds_done': o.current_round(),
+				'matches_url': '#listmatches/' + str(o.id),
+				'rankings_url': '#listrankings/' + str(o.id) if o.is_finished() else '',
 			}
 			for o in result
 	])
@@ -67,14 +70,25 @@ def tournaments(request, *args, **kwargs):
 def rankings(request, *args, **kwargs):
 	tournament_id = args[0]
 	tournament = Tournament.objects.get(pk = tournament_id)
-	return [
+
+	to_return = [ ]
+
+	last_score = None
+	last_rank = None
+	for rank, (player, score) in enumerate(tournament.final_rankings(), 1):
+		if score == last_score:
+			rank = last_rank
+		to_return.append(
 			{
+				'rank': rank,
 				'player': str(player),
 				'score': score,
 			}
-			for player, score
-			in tournament.final_rankings()
-	]
+		)
+		last_score = score
+		last_rank = rank
+
+	return to_return
 
 
 @rest
@@ -83,7 +97,6 @@ def matches(request, *args, **kwargs):
 	tournament = Tournament.objects.get(pk = tournament_id)
 	return [
 			{
-				'match': str(match),
 				'white': str(match.white_player),
 				'black': str(match.black_player),
 				'round': match.round,
