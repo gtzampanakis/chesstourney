@@ -178,7 +178,7 @@ class Tournament(models.Model):
 
 			def handle_non_fitting_player(nfpl):
 				if scorei == len(group_scores_sorted) - 1:
-# There is n other group. Give this player a bye.
+# There is no other group. Give this player a bye.
 					bye_match = Match(
 							white_player = nfpl,
 							black_player = Player.objects.get(id = BYE_PLAYER_ID),
@@ -190,7 +190,7 @@ class Tournament(models.Model):
 					LOGGER.info('BYE_MATCH: %s', bye_match)
 					add_fixture(bye_match)
 				else:
-# There is aother group. Add nfpl to that group.
+# There is another group. Add nfpl to that group.
 					score_to_group[group_scores_sorted[scorei + 1]].insert(0, nfpl)
 					group_handled.pop(-1)
 
