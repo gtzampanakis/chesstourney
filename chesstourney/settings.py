@@ -71,7 +71,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
 		'ATOMIC_REQUESTS': True,
 		'OPTIONS': {
-			'read_default_file': r'C:\Users\Giorgos\ctconfig\cnf.cnf',
+			'read_default_file': r'C:\Users\Giorgos\chesstourney\ctconfig\cnf.cnf',
 			'init_command': 'SET storage_engine=INNODB',
 		}
     }
