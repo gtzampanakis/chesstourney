@@ -148,7 +148,7 @@ var tournament_columns = [
 		editable: false,
 		cell: "uri",
 		formatter: {
-			fromRaw: function(rawData, model) { return rawData ? 'Rankings' : ''; },
+			fromRaw: function(rawData, model) { return 'Rankings'; },
 			toRaw: function(formattedData, model) { }
 		}
 	}

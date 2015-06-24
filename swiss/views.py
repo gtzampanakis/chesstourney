@@ -60,7 +60,7 @@ def tournaments(request, *args, **kwargs):
 				'rounds': o.rounds,
 				'rounds_done': o.current_round(),
 				'matches_url': '#listmatches/' + str(o.id),
-				'rankings_url': '#listrankings/' + str(o.id) if o.is_finished() else '',
+				'rankings_url': '#listrankings/' + str(o.id),
 			}
 			for o in result
 	])
