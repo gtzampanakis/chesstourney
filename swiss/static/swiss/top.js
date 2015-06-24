@@ -404,7 +404,7 @@ $(document).ready(function() {
 	Backbone.history.start();
 
 	// Default.
-	if (!/#/.test(window.location)) {
+	if (!/#/.test(window.location) || /#$/.test(window.location)) {
 		router.navigate('listtournaments', {trigger: true});
 	}
 
