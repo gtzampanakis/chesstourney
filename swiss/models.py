@@ -223,11 +223,10 @@ class Tournament(models.Model):
 						LOGGER.info('OPP_CANDIDATE: %s', opp_candidate)
 						if player == opp_candidate:
 							continue
-						if opp_candidate not in players_left_to_match:
+						elif opp_candidate not in players_left_to_match:
 							continue
-						if players_played_before(player, opp_candidate):
-							LOGGER.info('Players (%s, %s) have played before' %
-															(player, opp_candidate))
+						elif players_played_before(player, opp_candidate):
+							continue
 						else:
 							# Players have not played before. Pair them.
 							p1_white_matches = player.matches_as_white.filter(
