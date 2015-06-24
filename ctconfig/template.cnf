@@ -1,0 +1,5 @@
+[client]
+database = chesstourney
+user = root
+password = xxxxxxxx
+default-character-set = utf8
